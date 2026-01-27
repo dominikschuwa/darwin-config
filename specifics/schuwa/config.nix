@@ -5,5 +5,10 @@
       "nikitabobko/tap/aerospace"
       "font-hack-nerd-font"
     ];
+    brews = [
+      "fzf"
+    ];
   };
+
+  environment.systemPackages = [ pkgs.sketchybar ];
 }

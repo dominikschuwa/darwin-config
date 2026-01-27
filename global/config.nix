@@ -9,7 +9,7 @@
       environment.systemPackages = with pkgs;
         [ 
           libiconv
-          libiconv-darwin
+          darwin.libiconv
           git
           git-lfs
           rename
@@ -89,7 +89,7 @@
           tilesize = 20;
           largesize = 50;
           show-process-indicators = true;
-          persistent-apps = [ "/Applications/Nix\ Apps/Firefox.app" "/Applications/Cursor.app" ];
+          persistent-apps = [ "/Applications/Zen.app" "/Applications/Cursor.app" ];
         };
         NSGlobalDomain = {
           AppleInterfaceStyle = "Dark";
