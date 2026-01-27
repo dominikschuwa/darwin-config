@@ -17,11 +17,11 @@
           autojump
           go
           inputs.nix-search-cli.packages.${pkgs.system}.default
-          gimp
+#          gimp
           bundletool
           gnupg
 
-          firefox
+          # firefox
 
           (inputs.mergiraf.packages.${pkgs.system}.default.overrideAttrs (old: { doCheck = false; doInstallCheck = false; }))
         ];
