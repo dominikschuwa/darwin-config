@@ -208,7 +208,7 @@ in
     exec-on-workspace-change = ['/bin/bash', '-c', '${pkgs.sketchybar}/bin/sketchybar --trigger aerospace_workspace_change']
     
     # Auto-Start
-    after-startup-command = ['exec-and-forget sketchybar/bin/sketchybar']
+    after-startup-command = ['exec-and-forget ${pkgs.sketchybar}/bin/sketchybar']
     
     # -----------------------------------------------------------------------------
     # KEY BINDINGS (${mod} mapped)
@@ -216,53 +216,68 @@ in
     [mode.main.binding]
 
     # Apps
-    ${mod}-enter = 'exec-and-forget /Applications/Kitty.app/Contents/MacOS/kitty'
     ${mod}-q = 'close'
     ${mod}-d = 'exec-and-forget open -a Raycast'
     
     # Layout
-    ${mod}-t = 'layout floating tiling'
-    ${mod}-v = 'fullscreen'
+    ${mod}-v = 'layout floating tiling'
     
     # Focus (Vim Style)
     ${mod}-h = 'focus left'
-    ${mod}-j = 'focus down'
-    ${mod}-k = 'focus up'
-    ${mod}-l = 'focus right'
+    ${mod}-n = 'focus down'
+    ${mod}-e = 'focus up'
+    ${mod}-i = 'focus right'
     
     # Move
     ${mod}-shift-h = 'move left'
-    ${mod}-shift-j = 'move down'
-    ${mod}-shift-k = 'move up'
-    ${mod}-shift-l = 'move right'
+    ${mod}-shift-n = 'move down'
+    ${mod}-shift-e = 'move up'
+    ${mod}-shift-i = 'move right'
     
-    # Workspaces
+    # Workspaces (switch with numbers)
     ${mod}-1 = 'workspace 1'
+    ${mod}-keypad1 = 'workspace 1'
     ${mod}-2 = 'workspace 2'
+    ${mod}-keypad2 = 'workspace 2'
     ${mod}-3 = 'workspace 3'
+    ${mod}-keypad3 = 'workspace 3'
     ${mod}-4 = 'workspace 4'
-    
+    ${mod}-keypad4 = 'workspace 4'
+    ${mod}-keypad5 = 'workspace 5'
+    ${mod}-5 = 'workspace 5'
+    ${mod}-keypad6 = 'workspace 6'
+    ${mod}-6 = 'workspace 6'
+
+    # Move node to workspace (QWERTZ row)
     ${mod}-shift-1 = 'move-node-to-workspace 1'
+    ${mod}-shift-keypad1 = 'move-node-to-workspace 1'
     ${mod}-shift-2 = 'move-node-to-workspace 2'
+    ${mod}-shift-keypad2 = 'move-node-to-workspace 2'
     ${mod}-shift-3 = 'move-node-to-workspace 3'
+    ${mod}-shift-keypad3 = 'move-node-to-workspace 3'
     ${mod}-shift-4 = 'move-node-to-workspace 4'
+    ${mod}-shift-keypad4 = 'move-node-to-workspace 4'
+    ${mod}-shift-5 = 'move-node-to-workspace 5'
+    ${mod}-shift-keypad5 = 'move-node-to-workspace 5'
+    ${mod}-shift-6 = 'move-node-to-workspace 6'
+    ${mod}-shift-keypad6 = 'move-node-to-workspace 6'
 
     [gaps]
     inner.horizontal = 5
     inner.vertical   = 5
     outer.left       = 5
     outer.bottom     = 5
-    outer.top        = 5
+    outer.top        = [{ monitor.main = 36  },  {  monitor."LG HDR WQHD (1)" = 36 }, { monitor."LG HDR WQHD (2)" = 36 }, 36]
     outer.right      = 5
     
     # Monitor Assignment (Regex!)
     [workspace-to-monitor-force-assignment]
-    1 = '^Built-in.*'
-    2 = '^DP-1.*'
-
-    [[on-window-detected]]
-    if.app-id = 'net.kovidgoyal.kitty'
-    if.window-title-regex-substring = 'launcher'
-    run = 'layout floating'
+    
+    1 = ['LG HDR WQHD \(1\)', 'DELL.*21D']
+    2 = ['LG HDR WQHD \(2\)', 'VX.*-QHD']
+    3 = ['^Built-in.*', 'LG HDR WQHD \(1\)']
+    4 = ['LG HDR WQHD \(2\)', 'DELL.*21D']
+    5 = ['VX.*-QHD']
+    6 = ['^Built-in.*']
   '';
 }

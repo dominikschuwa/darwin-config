@@ -4,6 +4,8 @@
     casks = [
       "nikitabobko/tap/aerospace"
       "font-hack-nerd-font"
+      "eurkey"
+      "claude-code"
     ];
     brews = [
       "fzf"
