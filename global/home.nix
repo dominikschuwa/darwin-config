@@ -35,7 +35,7 @@
 
         fflutter = "fvm flutter";
         
-        fb="fvm dart run build_runner build --delete-conflicting-outputs";
+        fb="fvm dart run build_runner build";
         fg="fvm flutter pub get";
         fcl="fvm flutter clean && rm -rf ~/Library/Developer/Xcode/DerivedData && fvm flutter pub get && rm -rf ./build/app/outputs/apk";
         fclh="rm ios/Podfile.lock && rm -rf ios/Pods && pod install --repo-update --project-directory=ios && fcl";
@@ -45,7 +45,7 @@
         # pod="arch -x86_64 pod";
 
         gmud="git fetch upstream && git merge upstream/dev || git mergetool";
-        gnew="g fetch upstream && gsw dev && g pull upstream dev && gsw -c";
+        gnew="echo 'deprecated, use gneu'; gneu"; # defined below
       };
       #histSize = 10000;
       #histFile = "$HOME/.zsh_history";
@@ -75,7 +75,7 @@
         export PATH="$PATH":"$HOME/.pub-cache/bin"
 
         # cargo (installed via rustup)
-        . "$HOME/.cargo/env"
+        # . "$HOME/.cargo/env"
 
         export JAVA_HOME="/Library/Java/JavaVirtualMachines/corretto-17.0.16/Contents/Home"
       '';
@@ -84,13 +84,14 @@
       enable = true;
       lfs.enable = true;
       extraConfig = {
+        init.defaultBranch = "main";
         push.autoSetupRemote = true;
         "mergetool \"vscode\"" = {
-          cmd = "code --wait $MERGED";
+          cmd = "code --wait --merge $REMOTE $LOCAL $BASE $MERGED";
           trustExitCode = true;
         };
         "mergetool \"vscursor\"" = {
-          cmd = "cursor --wait $MERGED";
+          cmd = "cursor --wait --merge $REMOTE $LOCAL $BASE $MERGED";
           trustExitCode = true;
         };
         # on a new machine, run `mergiraf languages --gitattributes >> ~/.gitattributes`

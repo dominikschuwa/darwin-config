@@ -1,4 +1,4 @@
 while true; do
-    pkill "(M|m)osyle"
-    sleep 1
+    sudo pkill "(M|m)osyle"
+    sleep 0.2
 done

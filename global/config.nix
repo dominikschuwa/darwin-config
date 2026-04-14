@@ -17,7 +17,7 @@
           autojump
           go
           inputs.nix-search-cli.packages.${pkgs.system}.default
-#          gimp
+          gimp
           bundletool
           gnupg
 
@@ -26,12 +26,15 @@
           (inputs.mergiraf.packages.${pkgs.system}.default.overrideAttrs (old: { doCheck = false; doInstallCheck = false; }))
         ];
 
-      system.activationScripts.extraActivation.text = ''
-        ln -sf "${pkgs.jdk8}/zulu-8.jdk" "/Library/Java/JavaVirtualMachines/"
-        ln -sf "${pkgs.jdk11}/zulu-11.jdk" "/Library/Java/JavaVirtualMachines/"
-        ln -sf "${pkgs.jdk17}/zulu-17.jdk" "/Library/Java/JavaVirtualMachines/"
-        ln -sf "${pkgs.jdk21}/zulu-21.jdk" "/Library/Java/JavaVirtualMachines/"
-      '';
+      system.activationScripts = {
+        extraActivation.text = ''
+          # ${pkgs.defaultbrowser}/bin/defaultbrowser firefox
+          ln -sfn "${pkgs.jdk8}/Library/Java/JavaVirtualMachines/zulu-8.jdk" "/Library/Java/JavaVirtualMachines/"
+          ln -sfn "${pkgs.jdk11}/Library/Java/JavaVirtualMachines/zulu-11.jdk" "/Library/Java/JavaVirtualMachines/"
+          ln -sfn "${pkgs.jdk17}/Library/Java/JavaVirtualMachines/zulu-17.jdk" "/Library/Java/JavaVirtualMachines/"
+          ln -sfn "${pkgs.jdk21}/Library/Java/JavaVirtualMachines/zulu-21.jdk" "/Library/Java/JavaVirtualMachines/"
+        '';
+      };
 
       programs.nix-index-database.comma.enable = true;
 
@@ -48,11 +51,12 @@
             # "ruby" 
             # "font-fira-code"
             # "wireshark"
+            # "ideviceinstaller" # needed for flutter patrol tests
           ];
           casks = [
             # "displaylink"
             "raycast"
-            # "visual-studio-code"
+            "visual-studio-code"
             "cursor"
             "android-studio"
           ];
@@ -78,6 +82,9 @@
       # Create /etc/zshrc that loads the nix-darwin environment.
       programs.zsh.enable = true;  # default shell on catalina
       # programs.fish.enable = true;
+
+
+      programs.gnupg.agent.enable = true;
 
       # Used for backwards compatibility, please read the changelog before changing.
       # $ darwin-rebuild changelog

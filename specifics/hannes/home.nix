@@ -3,11 +3,11 @@
 {
     programs.git = {
       userName = "Hannes";
-      userEmail = "33062605+HannesGitH@users.noreply.github.com";
+      userEmail = "github@h-h.win";
 
       extraConfig = {
         commit.gpgsign = true;
-        user.signingkey = "418631D259CF0368999E14E35339BFCE9A05036C";
+        user.signingkey = "792D2673D758C914A2293714355878B8CF2515D1";
       };
     };
 }
