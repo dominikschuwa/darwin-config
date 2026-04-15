@@ -186,10 +186,13 @@ in
   };
 
     programs.git = {
-      settings = {
-        user.name = "dominikschuwa";
-        user.email = "dominik.schulze.waltrup@blingcard.de";
-      };
+      userName = "dominikschuwa";
+      userEmail = "dominik.schulze.waltrup@bling.de";
+
+       extraConfig = {
+        commit.gpgsign = true;
+        user.signingkey = "935FE616171A2DE2AAC7271E169962694C012151";
+       };
     };
 
       xdg.configFile."aerospace/aerospace.toml".text = ''
