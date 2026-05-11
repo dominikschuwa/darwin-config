@@ -6,35 +6,39 @@ keys:
   - &device_hannes_m1 age1mljxyz8dfamwpnjjt8w2atq77cpk9e3cpjryrrt6mfwk0ulmsausufencr
   - &device_hannes_m1_userspace age120pvmf6npprc4z7rhvr643dvkxp62ksrvmt6axyyk9cctagfwy8qsprdlj
   - &device_hannes_air_cursorbook age10yavrraclt2a5mdq53kz48q3p0jpyp9rra487yamkvq6xx6qpgts34y8ft
+  - &device_hannes_m4 age1pjauw376wq2dwaxdzjraedh4m7tdr6z5hqlyhnrlf4yj3c38dyxsgkrlr0
   - &device_david_user age1kn8x9gl4lz89mzldkj0g7jck5rzzwkgksakqpd25xyt4ce06r5dsqcv7h5
   - &device_david_root age16xwwdr5765pmqr9v3ns7eenuy7uj65njvkw8cwsncu2dk0f4ypjqxxjpy0
 creation_rules:
   - path_regex: secrets/hannes/*
     key_groups:
-    - age:
-      - *device_hannes_m1_userspace
-      - *device_hannes_m1
+      - age:
+          - *device_hannes_m1_userspace
+          - *device_hannes_m1
+          - *device_hannes_m4
   - path_regex: secrets/[^/]+\.(yaml|json|env|ini)$
     key_groups:
-    - age:
-      - *admin_bling_hannes
-      - *device_hannes_air_cursorbook
-      - *device_vm1_hannes
-      - *device_dominik
-      - *device_basti_root
-      - *device_hannes_m1
-      - *device_hannes_m1_userspace
-      - *device_david_user
-      - *device_david_root
+      - age:
+          - *admin_bling_hannes
+          - *device_hannes_air_cursorbook
+          - *device_vm1_hannes
+          - *device_dominik
+          - *device_basti_root
+          - *device_hannes_m1
+          - *device_hannes_m1_userspace
+          - *device_hannes_m4
+          - *device_david_user
+          - *device_david_root
   - path_regex: .*
     key_groups:
-    - age:
-      - *admin_bling_hannes
-      - *device_hannes_air_cursorbook
-      - *device_vm1_hannes
-      - *device_dominik
-      - *device_basti_root
-      - *device_hannes_m1
-      - *device_hannes_m1_userspace
-      - *device_david_user
-      - *device_david_root
+      - age:
+          - *admin_bling_hannes
+          - *device_hannes_air_cursorbook
+          - *device_vm1_hannes
+          - *device_dominik
+          - *device_basti_root
+          - *device_hannes_m1
+          - *device_hannes_m1_userspace
+          - *device_hannes_m4
+          - *device_david_user
+          - *device_david_root
