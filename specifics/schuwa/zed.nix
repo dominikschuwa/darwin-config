@@ -148,9 +148,9 @@
             path = lib.getExe pkgs.rust-analyzer;
           };
         };
-        nix = {
+        nixd = {
           binary = {
-            path_lookup = true;
+            path = lib.getExe pkgs.nixd;
           };
         };
         dart = {
