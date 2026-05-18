@@ -36,16 +36,16 @@ in
     nil
     autojump
     go
-    inputs.nix-search-cli.packages.${pkgs.system}.default
+    inputs.nix-search-cli.packages.${pkgs.stdenv.hostPlatform.system}.default
     bundletool
     gnupg
 
     kitty
     btop
 
-          # firefox
+    # firefox
 
-    (inputs.mergiraf.packages.${pkgs.system}.default.overrideAttrs (old: {
+    (inputs.mergiraf.packages.${pkgs.stdenv.hostPlatform.system}.default.overrideAttrs (old: {
       doCheck = false;
       doInstallCheck = false;
     }))
@@ -136,7 +136,6 @@ in
       largesize = 50;
       show-process-indicators = true;
       persistent-apps = [
-        "/Applications/Nix\ Apps/Firefox.app"
         "${pkgs.kitty}/Applications/kitty.app"
       ];
     };

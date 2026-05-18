@@ -1,48 +1,48 @@
 { config, pkgs, ... }:
 let
-  mod = "alt"; 
-  
+  mod = "alt";
+
   # --- COLORS (Catppuccin Mocha) ---
   colors = {
-    bg       = "0xff1e1e2e";
-    fg       = "0xffcdd6f4";
-    accent   = "0xff89b4fa"; # Blue
-    green    = "0xffa6e3a1";
-    red      = "0xfff38ba8";
-    yellow   = "0xfff9e2af";
-    surface  = "0xff313244";
-    item_bg  = "0xff45475a";
+    bg = "0xff1e1e2e";
+    fg = "0xffcdd6f4";
+    accent = "0xff89b4fa"; # Blue
+    green = "0xffa6e3a1";
+    red = "0xfff38ba8";
+    yellow = "0xfff9e2af";
+    surface = "0xff313244";
+    item_bg = "0xff45475a";
   };
 
   # --- ICONS (Nerd Font) ---
   icons = {
-    apple    = "";
+    apple = "";
     calendar = "󰃭";
-    clock    = "";
-    volume   = "";
-    wifi     = "";
-    battery  = "";
+    clock = "";
+    volume = "";
+    wifi = "";
+    battery = "";
   };
 
   # --- SCRIPTS (Plugins) ---
-  
+
   aerospacePlugin = pkgs.writeShellScript "sketchybar-aerospace" ''
     FOCUSED_WORKSPACE=$(${pkgs.aerospace}/bin/aerospace list-workspaces --focused)
-    
+
     if [ "$1" = "$FOCUSED_WORKSPACE" ]; then
         ${pkgs.sketchybar}/bin/sketchybar --set $NAME background.drawing=on background.color=${colors.accent} label.color=${colors.bg}
     else
         ${pkgs.sketchybar}/bin/sketchybar --set $NAME background.drawing=off label.color=${colors.fg}
     fi
   '';
-    # 2. Volume (Mit Mute-Logic)
+  # 2. Volume (Mit Mute-Logic)
   pluginVolume = pkgs.writeShellScript "sketchybar-volume" ''
     VOL=$(/usr/bin/osascript -e 'output volume of (get volume settings)')
     MUTED=$(/usr/bin/osascript -e 'output muted of (get volume settings)')
-    
+
     ICON="${icons.volume}"
     if [ "$MUTED" = "true" ]; then ICON="󰝟"; fi
-    
+
     ${pkgs.sketchybar}/bin/sketchybar --set $NAME icon="$ICON" label="$VOL%"
   '';
 
@@ -50,17 +50,17 @@ let
   pluginBattery = pkgs.writeShellScript "sketchybar-battery" ''
     # 1. Info holen
     BATT_INFO=$(/usr/bin/pmset -g batt)
-    
+
     PERCENT=$(echo "$BATT_INFO" | /usr/bin/grep -Eo "[0-9]+%" | /usr/bin/cut -d% -f1)
-    
+
     CHARGING=$(echo "$BATT_INFO" | /usr/bin/grep 'AC Power')
 
     if [ "$PERCENT" = "" ]; then PERCENT="?"; fi
 
     ICON="${icons.battery}"
     COLOR=${colors.fg}
-    
-    if [ -n "$CHARGING" ]; then 
+
+    if [ -n "$CHARGING" ]; then
         ICON=""
         COLOR=${colors.green}
     elif [ "$PERCENT" != "?" ] && [ "$PERCENT" -lt 20 ]; then
@@ -77,15 +77,19 @@ let
   '';
 in
 {
-      xdg.configFile."sketchybar/sketchybarrc" = {
+
+  imports = [
+    ./zed.nix
+  ];
+  xdg.configFile."sketchybar/sketchybarrc" = {
     executable = true;
     text = ''
       #!/bin/bash
-      
+
       # Helper Variables
       SB="${pkgs.sketchybar}/bin/sketchybar"
       AEROSPACE="${pkgs.aerospace}/bin/aerospace"
-      
+
       # --- GLOBAL DEFAULTS ---
       $SB --default \
           updates=on \
@@ -116,7 +120,7 @@ in
 
       # --- LEFT MODULES (Workspaces) ---
       $SB --add event aerospace_workspace_change
-      
+
       for sid in $($AEROSPACE list-workspaces --all); do
           $SB --add item space.$sid left \
               --subscribe space.$sid aerospace_workspace_change \
@@ -129,7 +133,7 @@ in
       done
 
       # --- RIGHT MODULES ---
-      
+
       # 1. Volume
       $SB --add item volume right \
           --subscribe volume volume_change \
@@ -185,34 +189,33 @@ in
     '';
   };
 
-    programs.git = {
-      userName = "dominikschuwa";
-      userEmail = "dominik.schulze.waltrup@bling.de";
-
-       extraConfig = {
-        commit.gpgsign = true;
-        user.signingkey = "935FE616171A2DE2AAC7271E169962694C012151";
-       };
+  programs.git = {
+    settings = {
+      user.name = "dominikschuwa";
+      user.email = "dominik.schulze.waltrup@bling.de";
+      commit.gpgsign = true;
+      user.signingkey = "935FE616171A2DE2AAC7271E169962694C012151";
     };
+  };
 
-      xdg.configFile."aerospace/aerospace.toml".text = ''
+  xdg.configFile."aerospace/aerospace.toml".text = ''
     # Generated via Nix Home Manager
-    
+
     # -----------------------------------------------------------------------------
     # BASIC SETTINGS
     # -----------------------------------------------------------------------------
     enable-normalization-flatten-containers = true
     enable-normalization-opposite-orientation-for-nested-containers = true
-    
+
 
     default-root-container-layout = 'tiles'
     default-root-container-orientation = 'auto'
 
     exec-on-workspace-change = ['/bin/bash', '-c', '${pkgs.sketchybar}/bin/sketchybar --trigger aerospace_workspace_change']
-    
+
     # Auto-Start
     after-startup-command = ['exec-and-forget ${pkgs.sketchybar}/bin/sketchybar']
-    
+
     # -----------------------------------------------------------------------------
     # KEY BINDINGS (${mod} mapped)
     # -----------------------------------------------------------------------------
@@ -221,22 +224,22 @@ in
     # Apps
     ${mod}-q = 'close'
     ${mod}-d = 'exec-and-forget open -a Raycast'
-    
+
     # Layout
     ${mod}-v = 'layout floating tiling'
-    
+
     # Focus (Vim Style)
     ${mod}-h = 'focus left'
     ${mod}-n = 'focus down'
     ${mod}-e = 'focus up'
     ${mod}-i = 'focus right'
-    
+
     # Move
     ${mod}-shift-h = 'move left'
     ${mod}-shift-n = 'move down'
     ${mod}-shift-e = 'move up'
     ${mod}-shift-i = 'move right'
-    
+
     # Workspaces (switch with numbers)
     ${mod}-1 = 'workspace 1'
     ${mod}-keypad1 = 'workspace 1'
@@ -272,10 +275,10 @@ in
     outer.bottom     = 5
     outer.top        = [{ monitor.main = 36  },  {  monitor."LG HDR WQHD (1)" = 36 }, { monitor."LG HDR WQHD (2)" = 36 }, 36]
     outer.right      = 5
-    
+
     # Monitor Assignment (Regex!)
     [workspace-to-monitor-force-assignment]
-    
+
     1 = ['LG HDR WQHD \(1\)', 'DELL.*21D']
     2 = ['LG HDR WQHD \(2\)', 'VX.*-QHD']
     3 = ['^Built-in.*', 'LG HDR WQHD \(1\)']

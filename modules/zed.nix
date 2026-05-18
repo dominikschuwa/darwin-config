@@ -197,9 +197,9 @@ in
         package =
           if cfg.channel == "unstable" then
             # The upstream zed flake exposes the editor as `packages.<system>.default`.
-            inputs.zed.packages.${pkgs.system}.default
+            inputs.zed.packages.${pkgs.stdenv.hostPlatform.system}.default
           else
-            inputs.nixpkgsunstable.legacyPackages.${pkgs.system}.zed-editor;
+            inputs.nixpkgsunstable.legacyPackages.${pkgs.stdenv.hostPlatform.system}.zed-editor;
         enable = true;
         extensions = lib.unique (
           [

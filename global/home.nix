@@ -24,26 +24,6 @@
 
   ];
 
-  myModules.zed = {
-      enable = true;
-      extensions = {
-        flutter = true;
-        rust = true;
-        nix = true;
-      };
-      mcp = {
-        linear.enable = true;
-        dart = {
-          enable = true;
-          # Match the fvm-managed Dart SDK that's already on the user's
-          # zsh PATH (see initContent below); spelled out absolutely so
-          # Zed launched from Spotlight/Finder still resolves it.
-          command = "${config.home.homeDirectory}/fvm/default/bin/dart";
-        };
-        figma.enable = true;
-      };
-    };
-
   programs.zen-browser = {
     enable = true;
     policies =

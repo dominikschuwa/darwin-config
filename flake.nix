@@ -33,7 +33,7 @@
     };
 
     # remove the last part if you always want the latest (unstable) version
-    zed.url = "github:zed-industries/zed/v1.1.6";
+    zed.url = "github:zed-industries/zed/v1.2.5";
   };
 
   outputs =
@@ -106,17 +106,17 @@
           ];
         };
         # schuwas config
-      "rigatoni" = nix-darwin.lib.darwinSystem {
-        specialArgs = { inherit inputs; };
-        modules = globalModules ++ [
-          {
-            # otherwise home-manager will ignore this user (and its sharedModules)
-            home-manager.users."blingmember" = import ./specifics/schuwa/home.nix;
-          }
-          ./specifics/schuwa/config.nix
-        ];
-      };
-      # general config
+        "rigatoni" = nix-darwin.lib.darwinSystem {
+          specialArgs = { inherit inputs; };
+          modules = globalModules ++ [
+            {
+              # otherwise home-manager will ignore this user (and its sharedModules)
+              home-manager.users."blingmember" = import ./specifics/schuwa/home.nix;
+            }
+            ./specifics/schuwa/config.nix
+          ];
+        };
+        # general config
         "blingi" = nix-darwin.lib.darwinSystem {
           specialArgs = { inherit inputs; };
           modules = globalModules ++ [
