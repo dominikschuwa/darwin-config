@@ -32,8 +32,12 @@
       inputs.home-manager.follows = "home-manager";
     };
 
-    # remove the last part if you always want the latest (unstable) version
-    zed.url = "github:zed-industries/zed/v1.2.5";
+    zed.url = "github:zed-industries/zed";
+
+    zsh-nix-shell = {
+      url = "github:chisui/zsh-nix-shell/v0.7.0";
+      flake = false;
+    };
   };
 
   outputs =
@@ -80,6 +84,10 @@
             # `home-manager` config
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
+            # Move pre-existing dotfiles aside (e.g. Zen's profiles.ini) instead
+            # of aborting activation. Backups land next to the originals as
+            # `<name>.hm-backup` so they're recoverable if anything was lost.
+            home-manager.backupFileExtension = "hm-backup";
             home-manager.extraSpecialArgs = {
               inherit inputs;
             };
@@ -89,6 +97,7 @@
           }
         )
         ./global/config.nix
+        ./modules/ai.nix
       ]
       ++ secretsModules;
     in

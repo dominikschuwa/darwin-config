@@ -30,10 +30,10 @@ in
 
     channel = mkOption {
       type = types.enum [
-        "stable"
         "unstable"
+        "nightly"
       ];
-      default = "stable";
+      default = "unstable";
       description = ''
         Which Zed package to install:
 
@@ -63,6 +63,31 @@ in
         default = true;
         description = "Install the Nix extension.";
       };
+      comment = mkOption {
+        type = types.bool;
+        default = true;
+        description = ''
+          Install the Comments Highlighter extension
+          (https://github.com/thedadams/zed-comment), which colorizes
+          TODO/NOTE/FIXME-style comment tags via tree-sitter injections.
+        '';
+      };
+    };
+
+    extraExtensions = mkOption {
+      type = types.listOf types.str;
+      default = [ ];
+      example = literalExpression ''[ "elixir" "vue" "catppuccin" ]'';
+      description = ''
+        Additional Zed extension registry IDs to install on top of the
+        ones covered by the `myModules.zed.extensions.*` toggles.
+
+        The value is a list of extension IDs as they appear on
+        https://zed.dev/extensions (or in each extension's
+        `extension.toml`). Use this for per-user extensions that don't
+        warrant a dedicated module option -- one-off language packs,
+        alternative themes, niche tooling, etc.
+      '';
     };
 
     theme = {
@@ -85,6 +110,29 @@ in
         Editor + terminal font. Should be a ligature-aware font; the matching
         package is added to home.packages automatically when this is left at
         the default.
+      '';
+    };
+
+    extraSettings = mkOption {
+      type = types.attrs;
+      default = { };
+      example = literalExpression ''
+        {
+          base_keymap = "VSCode";
+          buffer_font_size = 16;
+          ssh_connections = [ { host = "example.com"; username = "user"; } ];
+        }
+      '';
+      description = ''
+        Per-user overrides merged into Zed's `userSettings` on top of the
+        shared module defaults. Uses `lib.recursiveUpdate`, so individual
+        nested keys can be tweaked without clobbering sibling defaults
+        (lists, however, are replaced wholesale, not concatenated).
+
+        Set this from per-user files (e.g. `specifics/<user>/home.nix`) to
+        tailor Zed without forking the module -- the shared defaults stay
+        in `modules/zed.nix`, anything personal lives next to the user's
+        other home-manager config.
       '';
     };
 
@@ -151,7 +199,6 @@ in
       npx = lib.getExe' pkgs.nodejs "npx";
 
       mkRemoteServer = url: {
-        source = "custom";
         command = npx;
         args = [
           "-y"
@@ -175,7 +222,6 @@ in
         }
         // lib.optionalAttrs cfg.mcp.dart.enable {
           dart = {
-            source = "custom";
             command = cfg.mcp.dart.command;
             # `--experimental-mcp-server` is a no-op on Dart 3.9+, kept for
             # forward compatibility with older SDKs. `--force-roots-fallback`
@@ -195,7 +241,7 @@ in
     mkIf cfg.enable {
       programs.zed-editor = {
         package =
-          if cfg.channel == "unstable" then
+          if cfg.channel == "nightly" then
             # The upstream zed flake exposes the editor as `packages.<system>.default`.
             inputs.zed.packages.${pkgs.stdenv.hostPlatform.system}.default
           else
@@ -211,16 +257,59 @@ in
           # The Rust extension only adds toolchain helpers; rust-analyzer
           # itself is bundled with Zed, so this stays optional.
           ++ optionals cfg.extensions.rust [ "rust" ]
+          # `comment` is the registry id for thedadams/zed-comment.
+          ++ optionals cfg.extensions.comment [ "comment" ]
+          # Per-user escape hatch for extensions without a dedicated
+          # toggle. `lib.unique` above keeps things tidy if a user
+          # accidentally lists one that's already enabled by a toggle.
+          ++ cfg.extraExtensions
         );
 
-        userSettings = {
+        # Shared defaults are defined inline below; per-user tweaks come in
+        # via `cfg.extraSettings` (see e.g. `specifics/hannes/home.nix`).
+        # `lib.recursiveUpdate` deep-merges with right-side precedence, so
+        # individual leaf keys (or whole nested attrsets) can be overridden
+        # without restating the rest of the defaults.
+        userSettings = lib.recursiveUpdate {
           theme = {
             mode = "system";
             inherit (cfg.theme) dark light;
           };
 
-          base_keymap = "VSCode";
+          # `base_keymap` is intentionally not set here -- it's a personal
+          # preference, so users opt into VSCode/Atom/JetBrains bindings via
+          # `myModules.zed.extraSettings.base_keymap`.
           vim_mode = false;
+
+          # ---- Edit prediction (a.k.a. inline AI completions) ------------------
+          # Defaults to the local Zeta 2.1 served by MLX-LM at 127.0.0.1:8080.
+          # The system-level backend (model download + `mlx_lm.server` launchd
+          # agents) is wired up by `modules/ai.nix`, enabled from
+          # `global/config.nix` via `myModules.ai.enable = true`. On machines
+          # using both modules, edit predictions Just Work™ with no zed.dev
+          # sign-in and no network calls per keystroke.
+          #
+          # MLX (not ollama/llama.cpp) because Zeta's bracketed FIM tokens
+          # (`<[fim-prefix]>`, `<|marker_1|>`, ...) get shredded into
+          # sub-tokens by `convert_hf_to_gguf.py`. MLX uses the upstream
+          # `tokenizer.json` directly, so they're preserved.
+          #
+          # To opt out, override via `extraSettings.edit_predictions.provider`
+          # (e.g. `"zed"` for the hosted service, `"copilot"`, or `"none"`).
+          edit_predictions = {
+            provider = "open_ai_compatible_api";
+            open_ai_compatible_api = {
+              # Must match `myModules.ai.{host,port}` in modules/ai.nix.
+              api_url = "http://127.0.0.1:8080/v1/completions";
+              # Local path to the model dir -- the only ID mlx_lm.server
+              # reliably serves when HF_HUB_OFFLINE=1. Must match
+              # `~/Models/<myModules.ai.modelLocalSlug>` (default:
+              # "zeta-2.1-mlx-q4").
+              model = "${config.home.homeDirectory}/Models/zeta-2.1-mlx-q4";
+              prompt_format = "zeta2_1";
+              max_output_tokens = 512;
+            };
+          };
 
           ui_font_size = 15;
           buffer_font_size = 14;
@@ -235,8 +324,27 @@ in
           # this set so corporate macOS proxy settings don't bleed into Zed.
           proxy = "";
 
+          # ---- Editor behavior -------------------------------------------------
+          # `semantic_tokens = off` keeps Tree-sitter highlighting authoritative
+          # so the `comment` extension (and others that rely on injections) win
+          # over LSP-provided semantic tokens.
+          semantic_tokens = "off";
+          lsp_document_colors = "inlay";
+          colorize_brackets = true;
+          indent_guides = {
+            background_coloring = "disabled";
+            coloring = "indent_aware";
+          };
+
+          # ---- App behavior ----------------------------------------------------
+          cli_default_open_behavior = "new_window";
+
           # ---- Layout / panels -------------------------------------------------
           bottom_dock_layout = "contained";
+
+          collaboration_panel = {
+            dock = "left";
+          };
 
           git_panel = {
             tree_view = true;
@@ -292,10 +400,56 @@ in
               effort = "high";
             };
             model_parameters = [ ];
+
+            # Allowlist a few read-only tools and well-anchored shell
+            # commands so the agent can run them without prompting.
+            tool_permissions = {
+              tools = {
+                fetch = {
+                  default = "allow";
+                };
+                "mcp:dart:add_roots" = {
+                  default = "allow";
+                };
+                "mcp:linear:get_diff" = {
+                  default = "allow";
+                };
+                "mcp:linear:get_diff_threads" = {
+                  default = "allow";
+                };
+                "mcp:linear:get_issue" = {
+                  default = "allow";
+                };
+                "mcp:linear:list_comments" = {
+                  default = "allow";
+                };
+                "mcp:linear:search_documentation" = {
+                  default = "allow";
+                };
+                edit_file = {
+                  always_allow = [
+                    { pattern = "^app/\\.zed/"; }
+                  ];
+                };
+                terminal = {
+                  always_allow = [
+                    { pattern = "^ls\\b"; }
+                    { pattern = "^sort\\b"; }
+                    { pattern = "^tail\\b"; }
+                    { pattern = "^grep\\b"; }
+                    { pattern = "^head\\b"; }
+                    { pattern = "^find\\s+/nix/store(\\s|$)"; }
+                    { pattern = "^xargs\\s+grep(\\s|$)"; }
+                    { pattern = "^git\\s+log(\\s|$)"; }
+                    { pattern = "^git\\s+show(\\s|$)"; }
+                  ];
+                };
+              };
+            };
           };
 
           context_servers = contextServers;
-        };
+        } cfg.extraSettings;
       };
 
       home.packages = lib.optional (cfg.fontFamily == "FiraCode Nerd Font") pkgs.nerd-fonts.fira-code;

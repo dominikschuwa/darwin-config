@@ -10,6 +10,7 @@
   imports = [
     inputs.zen-browser.homeModules.beta
     ../modules/zed.nix
+    ../modules/git.nix
   ];
 
   # home.userName = "blingmember";
@@ -26,6 +27,21 @@
 
   programs.zen-browser = {
     enable = true;
+
+    # Declare a single default profile so that profiles.ini always
+    # contains a Default=1 entry. Without this, every Nix rebuild
+    # produces a new install-hash for Zen, which Zen treats as a
+    # brand-new install and uses to create a fresh empty profile,
+    # orphaning logins/history/sessions/extensions. With a declared
+    # default present, new install-hashes fall through to this
+    # profile instead of spawning a new one.
+    #
+    # Empty body is intentional: home-manager only manages files it
+    # is told about, so places.sqlite, key4.db, logins.json,
+    # cookies.sqlite, extensions/, etc. inside Profiles/main are
+    # left untouched.
+    profiles.main = { };
+
     policies =
       let
         mkExtensionSettings = builtins.mapAttrs (
@@ -90,17 +106,16 @@
       {
         name = "zsh-nix-shell";
         file = "nix-shell.plugin.zsh";
-        src = pkgs.fetchFromGitHub {
-          owner = "chisui";
-          repo = "zsh-nix-shell";
-          rev = "v0.7.0";
-          sha256 = "149zh2rm59blr2q458a5irkfh82y3dwdich60s9670kl3cl5h2m1";
-        };
+        src = inputs.zsh-nix-shell;
       }
     ];
     initContent = ''
       eval "$(/opt/homebrew/bin/brew shellenv)"
       export PATH="$HOME/fvm/default/bin:$PATH"
+
+      # Option+Right / Option+Left to jump words (matches macOS Terminal/iTerm2 default escape sequences)
+      bindkey "\e[1;3C" emacs-forward-word
+      bindkey "\e[1;3D" emacs-backward-word
 
       export PATH="$PATH":"$HOME/.pub-cache/bin"
 
@@ -130,18 +145,13 @@
     settings = {
       init.defaultBranch = "main";
       push.autoSetupRemote = true;
-      "mergetool \"vscode\"" = {
-        cmd = "code --wait --merge $REMOTE $LOCAL $BASE $MERGED";
-        trustExitCode = true;
-      };
-      "mergetool \"vscursor\"" = {
-        cmd = "cursor --wait --merge $REMOTE $LOCAL $BASE $MERGED";
-        trustExitCode = true;
-      };
+      # Mergetool entries (vscode/cursor/zed) and `merge.tool` live in
+      # `modules/git.nix`, which picks the right zed binary name based on
+      # `myModules.zed.channel` and exposes `myModules.git.mergetool` for
+      # per-user overrides.
       # on a new machine, run `mergiraf languages --gitattributes >> ~/.gitattributes`
       core.attributesfile = "~/.gitattributes";
       merge = {
-        tool = "vscursor";
         mergiraf = {
           name = "mergiraf";
           driver = "mergiraf merge --git %O %A %B -s %S -x %X -y %Y -p %P -l %L";
