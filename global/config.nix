@@ -23,6 +23,11 @@ in
       });
     })
     inputs.zed.overlays.default
+    # Exposes `pkgs.zed-grammars` / `pkgs.zed-extensions`, consumed by
+    # modules/zed.nix when `myModules.zed.extensions.nixInjectionFork` is
+    # on. `home-manager.useGlobalPkgs = true` means home-manager inherits
+    # this overlay, so the extension builder resolves there too.
+    inputs.nix-zed-extensions.overlays.default
   ];
 
   environment.variables.LANG = "en_GB.UTF-8";
@@ -33,7 +38,6 @@ in
     git
     git-lfs
     rename
-    nil
     autojump
     go
     inputs.nix-search-cli.packages.${pkgs.stdenv.hostPlatform.system}.default
@@ -44,6 +48,7 @@ in
     btop
 
     nixd
+    nil
 
     firefox
 
@@ -100,19 +105,21 @@ in
     ];
   };
 
-  # Local AI backend for Zed's edit-prediction feature. The module
-  # (`modules/ai.nix`) runs `mlx_lm.server` from a nix-managed Python env
-  # and lazily downloads the configured model from HuggingFace. The Zed
-  # side is wired up in `modules/zed.nix` via `open_ai_compatible_api`.
+  # Local AI backend for Zed's edit-prediction feature. Disabled by
+  # default: we don't run a local LLM unless a host explicitly opts in.
+  # Zed's edit-prediction instead uses the hosted Zeta service
+  # (`myModules.zed.editPrediction.provider = "zed"`, the module default).
   #
-  # MLX (not ollama/llama.cpp) because Zeta 2.1's bracketed FIM tokens
-  # (`<[fim-prefix]>`, `<|marker_1|>`, ...) don't survive GGUF conversion --
-  # MLX inherits the upstream `tokenizer.json` so they're preserved.
-  myModules.ai.enable = true;
+  # To go fully local/offline instead, set `myModules.ai.enable = true`
+  # here *and* `myModules.zed.editPrediction.provider = "local"`: the
+  # module (`modules/ai.nix`) runs a Metal-accelerated `mlx_lm.server`
+  # serving the model from `myModules.ai.preset` (default `zeta-2.1-3bit`,
+  # Zed's own edit-prediction model). Keep that preset in sync with
+  # `myModules.zed.editPrediction.preset`.
+  myModules.ai.enable = false;
 
   nix.extraOptions = ''
     extra-platforms = x86_64-darwin aarch64-darwin
-    sandbox = false
   '';
 
   # Auto upgrade nix package and the daemon service.
@@ -124,6 +131,29 @@ in
 
   nix.settings.trusted-users = [ "blingmember" ];
   system.primaryUser = "blingmember";
+
+  # Expose this machine as a remote Nix builder for trusted colleagues.
+  # The security model (dedicated unprivileged account + forced
+  # store-serve command at both the authorized_keys and sshd layers)
+  # lives in modules/remote-builder.nix.
+  #
+  # !! Fill in each colleague's SSH *public* key below. These are the
+  # keys the age identities in .sops.yaml were derived from via
+  # `ssh-to-age` -- that conversion is one-way, so the ssh-ed25519 line
+  # cannot be recovered from the age key and must be pasted here.
+  #
+  # After switching, enable SSH once:  sudo systemsetup -setremotelogin on
+  myModules.remoteBuilder = {
+    enable = true;
+    colleagueKeys = {
+      david = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIO2NPgDxUfqvfQs/JA0fUMG5YXY1pj1HWizXN/ihmfk7 david";
+      david-root = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOI63joa8qSpzGr3Otp7zCsuqx3zu7fRndi1U9HEnnO8 david-root";
+
+      # Allows this Mac's root Nix daemon to test the remote-builder path
+      # against itself. Keep this in sync if the local root SSH key rotates.
+      selftest = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJj2lauu5EzZAW9k1f3l04DLiUNqGGoel+yM4ODpU24H blingmember@MacBook-Pro.local";
+    };
+  };
 
   nix.settings.substituters = [
     "https://nixos-cache-proxy.cofob.dev"
@@ -148,7 +178,8 @@ in
       largesize = 50;
       show-process-indicators = true;
       persistent-apps = [
-        "${pkgs.kitty}/Applications/kitty.app"
+        "/Users/blingmember/Applications/Slack.app"
+        "/Applications/Nix\ Apps/kitty.app"
       ];
     };
     NSGlobalDomain = {

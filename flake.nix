@@ -2,20 +2,25 @@
   description = "darwin config for bling";
 
   # NOTE: `inputs` must be a static attrset literal -- modern Nix rejects
-  # thunks (e.g. a `let ... in { ... }` wrapper) here. If you need to bump
-  # the nixpkgs/nix-darwin/home-manager release line, update the three
-  # `25.11`s below in lock-step.
+  # thunks (e.g. a `let ... in { ... }` wrapper) here. nixpkgs/nix-darwin/
+  # home-manager track unstable/master rather than a release line, so that
+  # inputs which themselves target nixpkgs-unstable (zen-browser, zed,
+  # nix-zed-extensions) keep evaluating against our pin. To go back to a
+  # release line, move all three below in lock-step (`nixos-XX.YY`,
+  # `nix-darwin-XX.YY`, `release-XX.YY`).
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    # Kept as its own input so `modules/ai.nix` / `modules/zed.nix` keep
+    # working unchanged; now resolves to the same rev as `nixpkgs` above.
     nixpkgsunstable.url = "github:NixOS/nixpkgs/nixos-unstable";
 
-    nix-darwin.url = "github:LnL7/nix-darwin/nix-darwin-25.11";
+    nix-darwin.url = "github:LnL7/nix-darwin/master";
     nix-darwin.inputs.nixpkgs.follows = "nixpkgs";
 
     nix-index-database.url = "github:nix-community/nix-index-database";
     nix-index-database.inputs.nixpkgs.follows = "nixpkgs";
 
-    home-manager.url = "github:nix-community/home-manager/release-25.11";
+    home-manager.url = "github:nix-community/home-manager/master";
 
     prismLauncher.url = "github:HannesGitH/prismlauncherc";
     nix-search-cli.url = "github:peterldowns/nix-search-cli";
@@ -27,15 +32,24 @@
     sops-nix.url = "github:Mic92/sops-nix";
 
     zen-browser = {
-      # Pin the last revision before the signed Darwin package refactor.
-      # Newer revisions are incompatible with Home Manager 25.11 because
-      # mkFirefoxModule passes `cfg` to Zen's now-unwrapped package function.
-      url = "github:0xc000022070/zen-browser-flake/4f400bea6bb95dea4b8300ecedf3017b83974ae2";
+      # Needs a nixpkgs with `ffmpeg_9` (zen-browser-flake#381), i.e. unstable
+      # -- release lines up to 26.05 only carry `ffmpeg_8`. An overlay can't
+      # paper that over: zen builds its packages from its own
+      # `nixpkgs.legacyPackages`, which never sees `nixpkgs.overlays` from
+      # this config, so the `follows` below has to point at unstable.
+      url = "github:0xc000022070/zen-browser-flake";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.home-manager.follows = "home-manager";
     };
 
     zed.url = "github:zed-industries/zed";
+
+    # Declarative, source-built Zed extensions (grammars + wasm). Consumed
+    # by modules/zed.nix to install the sebb3 Nix-extension fork (runnable
+    # flake tasks + comment-based language injection) with its
+    # tree-sitter-nix grammar pinned to the injection-comment PR.
+    nix-zed-extensions.url = "github:DuskSystems/nix-zed-extensions";
+    nix-zed-extensions.inputs.nixpkgs.follows = "nixpkgs";
 
     zsh-nix-shell = {
       url = "github:chisui/zsh-nix-shell/v0.7.0";
@@ -81,7 +95,7 @@
         inputs.nix-index-database.darwinModules.nix-index
         home-manager.darwinModules.home-manager
         (
-          { pkgs, ... }:
+          { ... }:
           {
             # inherit nixpkgs;
             # `home-manager` config
@@ -91,6 +105,13 @@
             # of aborting activation. Backups land next to the originals as
             # `<name>.hm-backup` so they're recoverable if anything was lost.
             home-manager.backupFileExtension = "hm-backup";
+            # `backupFileExtension` on its own is single-shot: the second time
+            # the same path needs backing up, home-manager refuses to clobber
+            # the existing `<name>.hm-backup` and aborts activation with
+            # "Existing file ... would be clobbered by backing up ...".
+            # Zed's registry-installed extensions trip this on every upgrade.
+            # Keep only the most recent backup rather than failing the switch.
+            home-manager.overwriteBackup = true;
             home-manager.extraSpecialArgs = {
               inherit inputs;
             };
@@ -101,6 +122,7 @@
         )
         ./global/config.nix
         ./modules/ai.nix
+        ./modules/remote-builder.nix
       ]
       ++ secretsModules;
     in
@@ -111,7 +133,28 @@
           specialArgs = { inherit inputs; };
           modules = globalModules ++ [
             {
-              home-manager.users."blingmember" = import ./specifics/hannes/home.nix;
+              home-manager.users."blingmember" = {
+                imports = [
+                  ./specifics/hannes/home.nix
+                  # Backend-role Zed config (vtsls). maccaroni is a backend
+                  # dev box; pairs with ./specifics/backend/config.nix below.
+                  ./specifics/backend/home.nix
+                ];
+
+                # SSH remote scoped to this host (maccaroni) only -- layered
+                # into Zed's userSettings via extraSettings (modules/zed.nix).
+                myModules.zed.extraSettings.ssh_connections = [
+                  {
+                    host = "zuhause.h-h.win";
+                    username = "hannes";
+                    args = [ ];
+                    projects = [
+                      { paths = [ "/home/hannes" ]; }
+                      { paths = [ "/home/hannes/nix_config" ]; }
+                    ];
+                  }
+                ];
+              };
             }
             ./specifics/hannes/config.nix
             ./specifics/backend/config.nix
@@ -134,7 +177,12 @@
           modules = globalModules ++ [
             {
               # otherwise home-manager will ignore this user (and its sharedModules)
-              home-manager.users."blingmember" = { };
+              home-manager.users."blingmember" = {
+                # Ride upstream Zed releases directly (via the `zed` flake
+                # input) instead of nixpkgs' `unstable` package, matching
+                # maccaroni.
+                myModules.zed.channel = "nightly";
+              };
             }
           ];
         };

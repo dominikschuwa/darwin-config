@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ ... }:
 
 {
   # Hannes-specific Zed overrides. Shared Zed defaults live in

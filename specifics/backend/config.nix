@@ -1,7 +1,7 @@
-{ pkgs, config, lib, inputs, ... }: {
+{ pkgs, ... }: {
 
   environment.systemPackages = with pkgs; [
-    nodejs #22
+    nodejs_26 # 26.5.0+
   ];
 
   homebrew = {

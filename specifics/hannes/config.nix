@@ -1,4 +1,11 @@
-{ pkgs, config, lib, inputs, ... }: {
+{
+  pkgs,
+  config,
+  lib,
+  inputs,
+  ...
+}:
+{
 
   # Friendly name (AirDrop, Sharing), Bonjour, and Unix hostname
   networking = {
@@ -10,6 +17,7 @@
 
   environment.systemPackages = with pkgs; [
     # prismlauncher # just run nix run github:HannesGitH/prismlauncherc instead
+    signal-desktop
   ];
 
   # Full ASCII-armored export of the GPG signing key (public + private in
