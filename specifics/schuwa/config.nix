@@ -1,4 +1,10 @@
-{ pkgs, config,inputs,... }: {
+{
+  pkgs,
+  config,
+  inputs,
+  ...
+}:
+{
   homebrew = {
     enable = true;
     casks = [

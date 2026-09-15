@@ -17,7 +17,7 @@
       "rust"
     ];
 
-    package = inputs.nixpkgsunstable.legacyPackages.${pkgs.stdenv.hostPlatform.system}.zed-editor;
+    package = inputs.zed.packages.${pkgs.stdenv.hostPlatform.system}.default; # inputs.nixpkgsunstable.legacyPackages.${pkgs.stdenv.hostPlatform.system}.zed-editor;
     userKeymaps = [
       {
         context = "Workspace";

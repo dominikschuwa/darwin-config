@@ -27,7 +27,10 @@
     sops-nix.url = "github:Mic92/sops-nix";
 
     zen-browser = {
-      url = "github:0xc000022070/zen-browser-flake";
+      # Pin the last revision before the signed Darwin package refactor.
+      # Newer revisions are incompatible with Home Manager 25.11 because
+      # mkFirefoxModule passes `cfg` to Zen's now-unwrapped package function.
+      url = "github:0xc000022070/zen-browser-flake/4f400bea6bb95dea4b8300ecedf3017b83974ae2";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.home-manager.follows = "home-manager";
     };
